@@ -87,7 +87,7 @@ class AuthController extends BaseController
      */
     public function login(Request $request)
     {
-        if(Auth::attempt(['email' => $request->user["email"], 'password' => $request->user["password"]])){ 
+        if (Auth::attempt(['email' => $request->user["email"], 'password' => $request->user["password"]])) {
             $user = Auth::user();
 
             $tokenResult = $user->createToken(uuid_create());
@@ -96,16 +96,15 @@ class AuthController extends BaseController
             $user['roles'] = $user->getAllPermissions();
             $user['shipper'] = $user->shipper;
             $user['user_info'] = $user->userInfo;
-    
+
             if ($user['shipper_id'] == null) {
                 $user['shipper'] = $this->fake_shipper();
             }
-   
+
             return $this->sendResponse(['accessToken' => $token, 'user' => auth()->user()], 'User login successfully.');
-        } 
-        else{ 
-            return $this->sendError('Unauthorised.', ['error'=>'Unauthorised']);
-        } 
+        } else {
+            return $this->sendError('Unauthorised.', ['error' => 'Unauthorised']);
+        }
     }
 
     /**
@@ -126,14 +125,26 @@ class AuthController extends BaseController
         return $this->sendResponse(['user' => $user], 'User retrieved successfully.');
     }
 
+    /**
+     * Summary of user_permissions
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
     public function user_permissions(Request $request)
     {
+        logger($request->all());
         $user = auth()->user();
         $return['user_id'] = $user['id'];
         $return['permissions'] = $user->getAllPermissions();
         $return['shipper_id'] = $user['shipper_id'];
 
         return $this->sendResponse($return, 'User retrieved successfully.');
+    }
+
+    public function verifyToken()
+    {
+        logger(auth()->user());
+        return $this->sendResponse([], 'Token verified successfully.');
     }
 
     /**
@@ -171,23 +182,49 @@ class AuthController extends BaseController
         return $this->sendResponse([], 'User logged out successfully.');
     }
 
-  /**
-   * Fake shipper
-   * 
-   * @return [array] shipper
-   */
-  private function fake_shipper() {
-    return [
-      'name' => 'Hermes Crew',
-      'logo_image_url' => '/images/logo.svg',
-      'address' => 'Hermes Crew, 123',
-      'address_2' => 'Hermes Crew, 123 Fake Street, London, E1 6QR',
-      'city' => 'London',
-      'postcode' => 'E1 6QR',
-      'country' => 'United Kingdom',
-      'phone' => '020 1234 5678',
-      'contact_name' => 'Hermes Crew',
-      'contact_email' => 'teste@hermes.com',
-    ];
-  }
+    public function oauth_client(Request $request)
+    {
+        $requestClient = http_build_query([
+            // 'grant_type' => 'authorization_code',
+            'client_id' => $request->client_id,
+            'client_secret' => $request->client_secret,
+            'response_type' => 'code',
+            'scope' => 'freight-calculation',
+        ]);
+
+        // $tokenRequest = Request::create('/oauth/authorize', 'GET', $requestClient);
+        $tokenRequest = Request::create("/oauth/authorize?{$requestClient}", 'GET');
+        $response = app()->handle($tokenRequest);
+
+        logger($response);
+
+        if ($response->getStatusCode() === 200) {
+            // Authentication successful
+            return $this->sendResponse($response->getContent(), 'Client credentials retrieved successfully.');
+        } else {
+            return $this->sendError('Unauthorized.', $response->getContent(), JsonResponse::HTTP_UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * Fake shipper
+     * 
+     * @return [array] shipper
+     */
+    private function fake_shipper()
+    {
+        return [
+            'name' => 'Hermes Crew',
+            'logo_image_url' => '/images/logo.svg',
+            'address' => 'Hermes Crew, 123',
+            'address_2' => 'Hermes Crew, 123 Fake Street, London, E1 6QR',
+            'city' => 'London',
+            'postcode' => 'E1 6QR',
+            'country' => 'United Kingdom',
+            'phone' => '020 1234 5678',
+            'contact_name' => 'Hermes Crew',
+            'contact_email' => 'teste@hermes.com',
+        ];
+    }
 }
+;

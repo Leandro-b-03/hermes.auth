@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Models\Shipper;
+
+use App\Http\Controllers\Api\BaseController;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+
+class ShipperController extends BaseController
+{
+    /**
+     * Display a listing of the resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function index(Request $request)
+    {
+        return $this->sendResponse([], 'Shipper retrieved successfully.');
+    }
+
+    /**
+     * Get the tax ID of the shipper.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function tax_id($id)
+    {
+        logger($id);
+        $shipper = Shipper::find($id);
+        logger($shipper);
+
+        if (!$shipper) {
+            return $this->sendError('Shipper not found.');
+        }
+
+        return $this->sendResponse(['tax_id' => $shipper['tax_id']], 'Tax ID retrieved successfully.');
+    }
+}

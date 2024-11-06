@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ShipperController;
 use App\Http\Controllers\Api\V1\RolesPermissionController;
 
 /*
@@ -16,10 +17,14 @@ use App\Http\Controllers\Api\V1\RolesPermissionController;
 |
 */
 Route::group(['prefix' => 'v1'], function () {
+    Route::post('oauth', [AuthController::class, 'oauth_client']);
     Route::group(['prefix'=> 'auth'], function () {
         Route::post('login', [AuthController::class, 'login']);
         Route::post('register', [AuthController::class, 'register']);
         Route::post('refresh', [AuthController::class, 'refreshToken']);
+        Route::post('reset_password', [AuthController::class, 'resetPassword']);
+        Route::post('change_password', [AuthController::class, 'changePassword']);
+        Route::get('verify_token', [AuthController::class, 'verifyToken'])->middleware('client');
     
         Route::group(['middleware' => 'auth:api'], function () {
             Route::post('token', [AuthController::class, 'token']);
@@ -33,5 +38,9 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('list', [RolesPermissionController::class, 'list']);
         Route::post('create', [RolesPermissionController::class, 'create']);
         Route::post('assign_role', [RolesPermissionController::class, 'assignRole']);
+    });
+
+    Route::group(['prefix'=> 'shipper'], function () {
+        Route::get('tax_id/{id}', [ShipperController::class, 'tax_id']);
     });
 });
