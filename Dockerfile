@@ -38,8 +38,12 @@ RUN php artisan key:generate
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html
 
+# Start worker
+RUN apt install -y supervisor
+COPY ./miscs/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Expose port
-EXPOSE 8000
+EXPOSE 7002
 
 # Start the server
-CMD php artisan serve --host=0.0.0.0 --port=7002
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
