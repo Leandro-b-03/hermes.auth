@@ -8,9 +8,9 @@
 
 # Read .env file and check if composer install has run
 if [ -z "$COMPOSER_INSTALL_RUN" ] || [ "$COMPOSER_INSTALL_RUN" == "false" ]; then
-  composer install
+  composer install --ignore-platform-reqs --no-interaction --no-plugins --no-scripts --prefer-dist
   echo "COMPOSER_INSTALL_RUN=true" >> .env
 fi
 
 # Run the command passed to the docker run command
-php aritsan serve --host=0.0.0.0 --port 7002
+php artisan serve --host=0.0.0.0 --port 7002
