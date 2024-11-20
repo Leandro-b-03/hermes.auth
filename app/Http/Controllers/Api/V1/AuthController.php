@@ -120,8 +120,6 @@ class AuthController extends BaseController
 
         $user['shipper'] = ($user['shipper_id'] == null) ? $this->fake_shipper() : $user->shipper;
 
-        logger($user);
-
         return $this->sendResponse(['user' => $user], 'User retrieved successfully.');
     }
 
@@ -130,9 +128,8 @@ class AuthController extends BaseController
      * @param \Illuminate\Http\Request $request
      * @return JsonResponse|\Illuminate\Http\Response
      */
-    public function user_permissions(Request $request)
+    public function userPermissions(Request $request)
     {
-        logger($request->all());
         $user = auth()->user();
         $return['user_id'] = $user['id'];
         $return['permissions'] = $user->getAllPermissions();
@@ -143,7 +140,6 @@ class AuthController extends BaseController
 
     public function verifyToken()
     {
-        logger(auth()->user());
         return $this->sendResponse([], 'Token verified successfully.');
     }
 
@@ -195,8 +191,6 @@ class AuthController extends BaseController
         // $tokenRequest = Request::create('/oauth/authorize', 'GET', $requestClient);
         $tokenRequest = Request::create("/oauth/authorize?{$requestClient}", 'GET');
         $response = app()->handle($tokenRequest);
-
-        logger($response);
 
         if ($response->getStatusCode() === 200) {
             // Authentication successful

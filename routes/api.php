@@ -30,7 +30,7 @@ Route::group(['prefix' => 'v1'], function () {
             Route::post('token', [AuthController::class, 'token']);
             Route::delete('logout', [AuthController::class, 'logout']);
             Route::get('user', [AuthController::class, 'user']);
-            Route::get('user_permissions', [AuthController::class, 'user_permissions']);	
+            Route::get('user_permissions', [AuthController::class, 'userPermissions']);	
         });
     });
 
@@ -41,6 +41,10 @@ Route::group(['prefix' => 'v1'], function () {
     });
 
     Route::group(['prefix'=> 'shipper'], function () {
-        Route::get('tax_id/{id}', [ShipperController::class, 'tax_id']);
+        Route::group(['middleware' => 'auth:api'], function () {
+            Route::get('', [ShipperController::class, 'getUserShipper']);
+        });
+        
+        Route::get('tax_id/{id}', [ShipperController::class, 'taxId']);
     });
 });

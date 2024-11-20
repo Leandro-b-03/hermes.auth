@@ -27,16 +27,26 @@ class ShipperController extends BaseController
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function tax_id($id)
+    public function taxId($id)
     {
-        logger($id);
         $shipper = Shipper::find($id);
-        logger($shipper);
 
         if (!$shipper) {
             return $this->sendError('Shipper not found.');
         }
 
         return $this->sendResponse(['tax_id' => $shipper['tax_id']], 'Tax ID retrieved successfully.');
+    }
+
+    public function getUserShipper()
+    {
+        $user = auth()->user();
+        $shipper = Shipper::find($user['shipper_id']);
+
+        if (!$shipper) {
+            return $this->sendError('Shipper not found.');
+        }
+
+        return $this->sendResponse(['shipper' => $shipper], 'Shipper retrieved successfully.');
     }
 }

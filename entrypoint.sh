@@ -7,7 +7,10 @@
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Read .env file and check if composer install has run
-if [ -z "$COMPOSER_INSTALL_RUN" ] || [ "$COMPOSER_INSTALL_RUN" == "false" ]; then
+if grep -q "COMPOSER_INSTALL_RUN=false" .env; then 
+  composer install --ignore-platform-reqs --no-interaction --no-plugins --no-scripts --prefer-dist
+  sed -i 's/COMPOSER_INSTALL_RUN=false/COMPOSER_INSTALL_RUN=true/g' .env 
+elif ! grep -q "COMPOSER_INSTALL_RUN" .env; then
   composer install --ignore-platform-reqs --no-interaction --no-plugins --no-scripts --prefer-dist
   echo "COMPOSER_INSTALL_RUN=true" >> .env
 fi
