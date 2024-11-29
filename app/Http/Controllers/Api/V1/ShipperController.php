@@ -38,6 +38,13 @@ class ShipperController extends BaseController
         return $this->sendResponse(['tax_id' => $shipper['tax_id']], 'Tax ID retrieved successfully.');
     }
 
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function getUserShipper()
     {
         $user = auth()->user();
@@ -48,5 +55,31 @@ class ShipperController extends BaseController
         }
 
         return $this->sendResponse(['shipper' => $shipper], 'Shipper retrieved successfully.');
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $id)
+    {
+        $user = auth()->user();
+
+        if (!$user->hasRole('admin')) {
+            return $this->sendError('Unauthorized.', [], 403);
+        }
+
+        $shipper = Shipper::find($id);
+
+        if (!$shipper) {
+            return $this->sendError('Shipper not found.');
+        }
+
+        $shipper->update($request->all());
+
+        return $this->sendResponse(['shipper' => $shipper], 'Shipper updated successfully.');
     }
 }

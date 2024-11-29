@@ -43,6 +43,7 @@ Route::group(['prefix' => 'v1'], function () {
     Route::group(['prefix'=> 'shipper'], function () {
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('', [ShipperController::class, 'getUserShipper']);
+            Route::put('{id}', [ShipperController::class, 'update']);
         });
         
         Route::get('tax_id/{id}', [ShipperController::class, 'taxId']);

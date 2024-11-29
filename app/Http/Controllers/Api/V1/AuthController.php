@@ -132,6 +132,7 @@ class AuthController extends BaseController
     {
         $user = auth()->user();
         $return['user_id'] = $user['id'];
+        $return['roles'] = $user->getRoleNames();
         $return['permissions'] = $user->getAllPermissions();
         $return['shipper_id'] = $user['shipper_id'];
 

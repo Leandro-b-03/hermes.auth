@@ -42,15 +42,14 @@ class RolesPermissionController extends BaseController
         if ($request->role != null) {
             $validated = Validator::make($request->all(), [
                 'role.name' => 'required|string',
-                'role.guard_name' => 'required|string',
-                'role.shipper_id' => 'required|integer',
+                'role.guard_name' => 'required|string'
             ]);
 
             if ($validated->fails()) {
                 return $this->sendError('Validation failed.', $validated->errors(), JsonResponse::HTTP_BAD_REQUEST);
             }
 
-            $role = Role::make(['name'=> $request->role['name'], 'guard_name' => $request->role['guard_name'], 'shipper_id' => $request->role['shipper_id']]);
+            $role = Role::make(['name'=> $request->role['name'], 'guard_name' => $request->role['guard_name']]);
 
             if (!$role->saveOrFail()) {
                 return $this->sendError('Error on role creation', $role->errors(), JsonResponse::HTTP_BAD_REQUEST);
@@ -58,23 +57,26 @@ class RolesPermissionController extends BaseController
         } else {
             $validated = Validator::make($request->all(), [
                 'permission.name' => 'required|string',
-                'permission.guard_name' => 'required|string',
-                'permission.role.shipper_id' => 'required|integer',
+                'permission.guard_name' => 'required|string'
             ]);
 
             if ($validated->fails()) {
                 return $this->sendError('Validation failed.', $validated->errors(), JsonResponse::HTTP_BAD_REQUEST);
             }
-
-            $role = Role::findByName($request->permission['role']['name'], $request->permission['role']['guard_name']);
             
-            $permission = Permission::make(['name' => $request->permission['name'], 'guard_name' => $request->permission['guard_name'], 'shipper_id' => $request->permission['role']['shipper_id']]);
+            $permission = Permission::make(['name' => $request->permission['name'], 'guard_name' => $request->permission['guard_name']]);
 
-            if ($permission->saveOrFail()) {
-                return $this->sendError('Error on permission creation', $permission->errors(), JsonResponse::HTTP_BAD_REQUEST);
+            try {
+                $permission->saveOrFail();
+            } catch (\Exception $e) {
+                return $this->sendError('Error on permission creation', $e->getMessage(), JsonResponse::HTTP_BAD_REQUEST);
             }
 
-            $permission->assignRole($role);
+            if (isset($request->permission['role'])) {
+                $role = Role::findByName($request->permission['role']['name'], $request->permission['role']['guard_name']);
+                
+                $permission->assignRole($role);
+            }
         }
 
         return $this->sendResponse([
