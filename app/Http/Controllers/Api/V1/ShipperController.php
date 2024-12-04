@@ -98,7 +98,7 @@ class ShipperController extends BaseController
         try {
             DB::beginTransaction();
 
-            $logo = $request->file('shipper')['logo'];
+            $logo = $request->file('shipper')['logo'] ?? null;
 
             $values = $request->input('shipper');
 
