@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ShipperController;
 use App\Http\Controllers\Api\V1\RolesPermissionController;
@@ -32,6 +33,14 @@ Route::group(['prefix' => 'v1'], function () {
             Route::get('user', [AuthController::class, 'user']);
             Route::get('user_permissions', [AuthController::class, 'userPermissions']);	
         });
+    });
+
+    Route::group(['prefix'=> 'users', 'middleware' => 'auth:api'], function () {
+        Route::get('', [UserController::class, 'index']);
+        Route::get('{id}', [UserController::class, 'show']);
+        Route::post('invite', [UserController::class, 'invite']);
+        Route::put('{id}', [UserController::class, 'update']);
+        Route::post('{id}', [UserController::class, 'disable']);
     });
 
     Route::group(['prefix'=> 'roles', 'middleware' => 'auth:api'], function () {

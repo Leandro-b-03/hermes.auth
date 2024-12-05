@@ -139,6 +139,10 @@ class AuthController extends BaseController
         return $this->sendResponse($return, 'User retrieved successfully.');
     }
 
+    /**
+     * Summary of verifyToken
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
     public function verifyToken()
     {
         return $this->sendResponse([], 'Token verified successfully.');
