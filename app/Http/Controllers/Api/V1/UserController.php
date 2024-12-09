@@ -39,7 +39,7 @@ class UserController extends BaseController
 
         $query = User::whereHas('shipper', function ($q) use ($request) {
             $q->where('shipper_id', \Auth::user()->shipper_id);
-        })->select('id', 'name', 'email', 'email_verified_at', 'created_at', 'updated_at');
+        })->select('id', 'name', 'email', 'email_verified_at', 'active', 'created_at', 'updated_at');
 
         if ($filter && $fields) {
             $fields = (is_array($fields)) ? explode(',', $fields[0]) : [$fields];
