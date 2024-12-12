@@ -26,12 +26,13 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('reset_password', [AuthController::class, 'resetPassword']);
         Route::post('change_password', [AuthController::class, 'changePassword']);
         Route::get('verify_token', [AuthController::class, 'verifyToken'])->middleware('client');
+        Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['auth:api', 'signed'])->name('verification.verify');
     
         Route::group(['middleware' => 'auth:api'], function () {
             Route::post('token', [AuthController::class, 'token']);
             Route::delete('logout', [AuthController::class, 'logout']);
             Route::get('user', [AuthController::class, 'user']);
-            Route::get('user_permissions', [AuthController::class, 'userPermissions']);	
+            Route::get('user_permissions', [AuthController::class, 'userPermissions']);
         });
     });
 

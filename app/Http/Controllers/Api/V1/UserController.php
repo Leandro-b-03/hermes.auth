@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Api\BaseController;
-use Illuminate\Http\Request;
-
 use App\Models\User;
+use App\Models\InviteUser;
+
+use App\Http\Controllers\Api\BaseController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends BaseController
 {
@@ -21,6 +28,59 @@ class UserController extends BaseController
         $users = $this->query(request());
 
         return $this->sendResponse(['users' => $users], 'Users retrieved successfully.');
+    }
+
+    /**
+     * Summary of invite
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse|mixed
+     */
+    public function invite(Request $request)
+    {
+        DB::beginTransaction();
+
+         // 1. Adjust payload structure (example)
+        $users = collect($request->users)->map(function ($email) {
+            return ['email' => $email];
+        });
+
+        foreach ($users as $user) {
+            // 2. Correct validation logic
+            $validated = Validator::make($user, [
+                'email' => 'required|email|unique:invite_users,email',
+            ])->validate(); 
+
+            // Generate token
+            $token = Str::uuid()->toString();
+
+            // Create invitation record
+            $invitation = new InviteUser([
+                'user_id' => Auth::user()->id,
+                'shipper_id' => Auth::user()->shipper_id,
+                'email' => $validated['email'],
+                'token' => $token,
+                'token_expired_at' => now()->addDays(7),
+                'invite_user_url' => route('verification.verify', ['id' => Auth::user()->id, 'hash' => $token]),
+                'is_active' => true,
+            ]);
+            
+            try {
+                if (!$invitation->saveOrFail()) {
+                    throw new \Exception('Failed to save invitation.');
+                }
+
+                // Send email notification with the token
+                // Mail::to($validated['email'])->send(new InvitationEmail($token));
+
+                DB::commit();
+
+                return $this->sendResponse([], 'Invitation sent successfully.');
+            } catch (\Exception $e) {
+                logger($e);
+                DB::rollBack();
+                return $this->sendError('Error on send invitation', [$e->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+            }
+        }
     }
 
      /**

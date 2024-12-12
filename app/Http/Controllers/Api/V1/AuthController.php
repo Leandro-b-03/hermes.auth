@@ -11,7 +11,9 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\Api\BaseController as BaseController;
 
 class AuthController extends BaseController
@@ -25,6 +27,7 @@ class AuthController extends BaseController
     public function register(Request $request)
     {
         DB::beginTransaction();
+
         $validated = Validator::make($request->all(), [
             'user.name' => 'required|string',
             'user.email' => 'required|string|unique:users,email',
@@ -67,16 +70,30 @@ class AuthController extends BaseController
 
                 DB::commit();
 
+                event(new Registered($user));
+
                 return $this->sendResponse([
                     'accessToken' => $token,
                 ], 'User created successfully.');
             } else {
                 DB::rollBack();
+                logger('User not saved');
                 return $this->sendError('User creation failed.', [], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
             }
         } catch (\Exception $e) {
+            DB::rollBack();
+            logger($e);
             return $this->sendError('Error on create user', [$e->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Summary of email_verifiy
+     * @param \Illuminate\Foundation\Auth\EmailVerificationRequest $request
+     * @return void
+     */
+    public function email_verifiy(EmailVerificationRequest $request) {
+        $request->fulfill();
     }
 
     /**
