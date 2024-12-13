@@ -38,48 +38,81 @@ class UserController extends BaseController
     public function invite(Request $request)
     {
         DB::beginTransaction();
+        $errors = []; // Array to store validation errors
 
-         // 1. Adjust payload structure (example)
+        // Adjust payload structure
         $users = collect($request->users)->map(function ($email) {
             return ['email' => $email];
         });
 
         foreach ($users as $user) {
-            // 2. Correct validation logic
-            $validated = Validator::make($user, [
+            // Validate email
+            $validator = Validator::make($user, [
                 'email' => 'required|email|unique:invite_users,email',
-            ])->validate(); 
+            ]);
 
             // Generate token
             $token = Str::uuid()->toString();
 
-            // Create invitation record
-            $invitation = new InviteUser([
-                'user_id' => Auth::user()->id,
-                'shipper_id' => Auth::user()->shipper_id,
-                'email' => $validated['email'],
-                'token' => $token,
-                'token_expired_at' => now()->addDays(7),
-                'invite_user_url' => route('verification.verify', ['id' => Auth::user()->id, 'hash' => $token]),
-                'is_active' => true,
-            ]);
-            
-            try {
-                if (!$invitation->saveOrFail()) {
-                    throw new \Exception('Failed to save invitation.');
+            if ($validator->fails()) {
+                $emailError = $validator->errors()->first('email');
+                if ($emailError === 'validation.unique') {
+                    $invitation = InviteUser::where('email', $user['email'])->first();
+
+                    if (!$invitation->is_active) {
+                        return $this->sendError('Validation failed.', ['Email already a member.'], JsonResponse::HTTP_BAD_REQUEST);
+                    } else {
+                        try {
+                            $invitation->update([
+                                'token' => $token,
+                                'token_expired_at' => now()->addDays(7),
+                                'invite_user_url' => route('verification.verify', ['id' => Auth::user()->id, 'hash' => $token]),
+                                'is_active' => true,
+                            ]);
+
+                            // Send email notification with the token
+                            // Mail::to($user['email'])->send(new InvitationEmail($token));
+
+                            DB::commit();
+                        } catch (\Exception $e) {
+                            logger($e);
+                            DB::rollBack();
+                            $errors[$user['email']] = $validator->errors();
+                        }
+                    }
+                } else {
+                    $errors[$user['email']] = $validator->errors(); // Store errors for this user
                 }
+            } else {
+                // Create invitation record
+                $invitation = new InviteUser([
+                    'user_id' => Auth::user()->id,
+                    'shipper_id' => Auth::user()->shipper_id,
+                    'email' => $user['email'],
+                    'token' => $token,
+                    'token_expired_at' => now()->addDays(7),
+                    'invite_user_url' => route('verification.verify', ['id' => Auth::user()->id, 'hash' => $token]),
+                    'is_active' => true,
+                ]);
 
-                // Send email notification with the token
-                // Mail::to($validated['email'])->send(new InvitationEmail($token));
+                try {
+                    $invitation->saveOrFail();
 
-                DB::commit();
+                    // Send email notification with the token
+                    // Mail::to($user['email'])->send(new InvitationEmail($token));
 
-                return $this->sendResponse([], 'Invitation sent successfully.');
-            } catch (\Exception $e) {
-                logger($e);
-                DB::rollBack();
-                return $this->sendError('Error on send invitation', [$e->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+                } catch (\Exception $e) {
+                    $errors[$user['email']] = [$e->getMessage()]; // Store error for this user
+                }
             }
+        }
+
+        if (empty($errors)) {
+            DB::commit();
+            return $this->sendResponse([], 'Invitation sent successfully.');
+        } else {
+            DB::rollBack();
+            return $this->sendError('Validation failed.', $errors, JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
