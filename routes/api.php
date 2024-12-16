@@ -36,6 +36,9 @@ Route::group(['prefix' => 'v1'], function () {
         });
     });
 
+    
+    Route::get('auth/user/verify_signup_token', [AuthController::class, 'verifySignupToken']);
+
     Route::group(['prefix'=> 'users', 'middleware' => 'auth:api'], function () {
         Route::get('', [UserController::class, 'index']);
         Route::get('{id}', [UserController::class, 'show']);

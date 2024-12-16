@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
 use App\Models\UserInfo;
+use App\Models\InviteUser;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -200,6 +201,11 @@ class AuthController extends BaseController
         return $this->sendResponse([], 'User logged out successfully.');
     }
 
+    /**
+     * Summary of oauth_client
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
     public function oauth_client(Request $request)
     {
         $requestClient = http_build_query([
@@ -223,6 +229,33 @@ class AuthController extends BaseController
     }
 
     /**
+     * Summary of verifySignupToken
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
+    public function verifySignupToken(Request $request)
+    {
+        if (!$request->has('token_code')) {
+            return $this->sendError('Token code is required.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        $invite = InviteUser::where('token', $request->token_code)->first();
+        if ($invite->email_verified_at != null) {
+            return $this->sendError('Email already verified.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($invite->token_expired_at < now()) {
+            return $this->sendError('Token expired.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($invite->is_active == 0) {
+            return $this->sendError('Invite is not active.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        return $this->sendResponse(['email' => $invite->email], 'Signup token is valid.');
+    }
+
+    /**
      * Fake shipper
      * 
      * @return [array] shipper
@@ -243,4 +276,3 @@ class AuthController extends BaseController
         ];
     }
 }
-;
