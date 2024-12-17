@@ -21,7 +21,7 @@ Route::group(['prefix' => 'v1'], function () {
     Route::post('oauth', [AuthController::class, 'oauth_client']);
     Route::group(['prefix'=> 'auth'], function () {
         Route::post('login', [AuthController::class, 'login']);
-        Route::post('register', [AuthController::class, 'register']);
+        Route::post('user', [AuthController::class, 'register']);
         Route::post('refresh', [AuthController::class, 'refreshToken']);
         Route::post('reset_password', [AuthController::class, 'resetPassword']);
         Route::post('change_password', [AuthController::class, 'changePassword']);

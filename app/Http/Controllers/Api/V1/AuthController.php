@@ -29,6 +29,38 @@ class AuthController extends BaseController
     {
         DB::beginTransaction();
 
+        logger($request->all());
+
+        if (!$request->has('token_code')) {
+            return $this->sendError('Token code is required.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if (!$request->has('user')) {
+            return $this->sendError('User data is required.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        $invite = InviteUser::where('token', $request->token_code)->first();
+
+        if ($invite == null) {
+            return $this->sendError('Token not found.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($invite->email != $request->user['email']) {
+            return $this->sendError('Email not match.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($invite->email_verified_at != null) {
+            return $this->sendError('Email already verified.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($invite->token_expired_at < now()) {
+            return $this->sendError('Token expired.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
+        if ($invite->is_active == 0) {
+            return $this->sendError('Invite is not active.', [], JsonResponse::HTTP_BAD_REQUEST);
+        }
+
         $validated = Validator::make($request->all(), [
             'user.name' => 'required|string',
             'user.email' => 'required|string|unique:users,email',
@@ -47,6 +79,8 @@ class AuthController extends BaseController
             'name' => $request->user['name'],
             'email' => $request->user['email'],
             'password' => bcrypt($request->user['password']),
+            'shipper_id' => $invite->shipper_id,
+            'active' => 1,
         ]);
 
         try {
@@ -56,7 +90,7 @@ class AuthController extends BaseController
                 if ($request->has('role')) {
                     $role = Role::findByName($request->role, 'api');
                 } else {
-                    $role = Role::findByName('User', 'api');
+                    $role = Role::findByName('user', 'api');
                 }
 
                 $user_info = new UserInfo([
@@ -65,6 +99,11 @@ class AuthController extends BaseController
                 $user_info->saveOrFail();
 
                 $user->assignRole($role);
+
+                $invite->email_verified_at = now();
+                $invite->token_expired_at = now();
+                $invite->is_active = 0;
+                $invite->save();
 
                 $tokenResult = $user->createToken(uuid_create());
                 $token = $tokenResult->accessToken;

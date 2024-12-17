@@ -25,6 +25,7 @@ class User extends Authenticatable
         'email',
         'password',
         'active',
+        'shipper_id',
         'email_verified_at',
     ];
 
