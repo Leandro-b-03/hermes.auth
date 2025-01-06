@@ -20,7 +20,8 @@ class UserController extends BaseController
      * Summary of index
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Response
      */
-    public function index() {
+    public function index()
+    {
         if (!auth()->user()->hasRole('admin') && !auth()->user()->can('auth.read')) {
             return $this->sendError('Unauthorized.', [], 403);
         }
@@ -116,7 +117,55 @@ class UserController extends BaseController
         }
     }
 
-     /**
+    /**
+     * Summary of show
+     * @param mixed $id
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return $this->sendError('User not found.', [], 404);
+        }
+
+        if (!auth()->user()->hasRole('admin') && !auth()->user()->can('auth.read')) {
+            return $this->sendError('Unauthorized.', [], 403);
+        }
+
+        return $this->sendResponse(['user' => $user], 'User retrieved successfully.');
+    }
+
+    /**
+     * Summary of show
+     * @param int $id
+     * @return JsonResponse|mixed
+     */
+    public function delete($id)
+    {
+        DB::beginTransaction();
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return $this->sendError('User not found.', [], 404);
+        }
+
+        try {
+            $user->active = false;
+            $user->save();
+
+            DB::commit();
+
+            return $this->sendResponse([], 'User deactivated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->sendError('Failed to deactivate user.', [], 500);
+        }
+    }
+
+    /**
      * Query the database for users.
      *
      * @param  \Illuminate\Http\Request  $request

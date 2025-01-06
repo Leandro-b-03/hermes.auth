@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Http\Middleware\RolePermission;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -23,7 +24,7 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('login', [AuthController::class, 'login']);
         Route::post('user', [AuthController::class, 'register']);
         Route::post('refresh', [AuthController::class, 'refreshToken']);
-        Route::post('reset_password', [AuthController::class, 'resetPassword']);
+        Route::post('user/reset_password', [AuthController::class, 'resetPassword']);
         Route::post('change_password', [AuthController::class, 'changePassword']);
         Route::get('verify_token', [AuthController::class, 'verifyToken'])->middleware('client');
         Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->middleware(['auth:api', 'signed'])->name('verification.verify');
@@ -32,6 +33,7 @@ Route::group(['prefix' => 'v1'], function () {
             Route::post('token', [AuthController::class, 'token']);
             Route::delete('logout', [AuthController::class, 'logout']);
             Route::get('user', [AuthController::class, 'user']);
+            Route::middleware(RolePermission::class.':auth.update')->post('user/reset_password_l', [AuthController::class, 'resetPassword']);
             Route::get('user_permissions', [AuthController::class, 'userPermissions']);
         });
     });
@@ -39,12 +41,12 @@ Route::group(['prefix' => 'v1'], function () {
     
     Route::get('auth/user/verify_signup_token', [AuthController::class, 'verifySignupToken']);
 
-    Route::group(['prefix'=> 'users', 'middleware' => 'auth:api'], function () {
+    Route::group(['prefix'=> 'user', 'middleware' => 'auth:api'], function () {
         Route::get('', [UserController::class, 'index']);
         Route::get('{id}', [UserController::class, 'show']);
         Route::post('invite', [UserController::class, 'invite']);
         Route::put('{id}', [UserController::class, 'update']);
-        Route::post('{id}', [UserController::class, 'disable']);
+        Route::middleware(RolePermission::class.':auth.delete')->delete('{id}', [UserController::class, 'delete']);
     });
 
     Route::group(['prefix'=> 'roles', 'middleware' => 'auth:api'], function () {

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\Api\BaseController as BaseController;
@@ -292,6 +293,41 @@ class AuthController extends BaseController
         }
 
         return $this->sendResponse(['email' => $invite->email], 'Signup token is valid.');
+    }
+
+     /**
+     * Summary of reset_password
+     * @param mixed $id
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
+    public function resetPassword(Request $request)
+    {
+        logger($request->all());
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return $this->sendError('User not found.', [], 404);
+        }
+
+        if (auth()->user()) {
+            if (!auth()->user()->hasRole('admin') && !auth()->user()->can('auth.update')) {
+                return $this->sendError('Unauthorized.', [], 403);
+            }
+        }
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        logger($status);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return $this->sendResponse([], 'Password reset link sent successfully.');
+        } else {
+            return ($status === Password::RESET_THROTTLED)
+                ? $this->sendError('Too many requests. Please try again later.', [], 429)
+                : $this->sendError('Failed to send password reset link.', [], 500);
+        }
     }
 
     /**

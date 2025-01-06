@@ -6,9 +6,11 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 use Spatie\Permission\PermissionServiceProvider;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Auth\Notifications\ResetPassword;
 // use Illuminate\Notifications\Messages\MailMessage;
 
 use App\Models\User;
+use Illuminate\Support\Env;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,5 +36,10 @@ class AppServiceProvider extends ServiceProvider
 
             });
         }
+
+        ResetPassword::createUrlUsing(function (User $user, string $token) {
+            $url = Env::get('PORTAL_URL', 'https://localhost:5173');
+            return "$url/reset-password?token=$token";
+        });
     }
 }
