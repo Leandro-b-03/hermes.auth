@@ -47,6 +47,7 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('invite', [UserController::class, 'invite']);
         Route::put('{id}', [UserController::class, 'update']);
         Route::middleware(RolePermission::class.':auth.delete')->delete('{id}', [UserController::class, 'delete']);
+        Route::middleware(RolePermission::class.':auth.update')->post('{id}/activate', [UserController::class, 'reactive']);
     });
 
     Route::group(['prefix'=> 'roles', 'middleware' => 'auth:api'], function () {

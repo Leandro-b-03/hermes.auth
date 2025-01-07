@@ -167,4 +167,35 @@ class RolesPermissionController extends BaseController
             'user' => $user,
         ], 'Role assigned user successfully.');
     }
+
+    /**
+     * Assign role to permission
+     *
+     * @param  Request  $request
+     */
+    public function assignPermissionToRole(Request $request)
+    {
+        $role = Role::findByName($request->assign['role']['name'], $request->assign['role']['guard_name']);
+        $permission = Permission::findByName($request->assign['permission']['name'], $request->assign['permission']['guard_name']);
+
+        $role->givePermissionTo($permission);
+
+        return $this->sendResponse([
+            'role' => $role,
+            'permission' => $permission,
+        ], 'Permission assigned to role successfully.');
+    }
+
+    public function assignPermissionToUser(Request $request)
+    {
+        $user = User::find($request->assign['user_id']);
+        $permission = Permission::findByName($request->assign['permission']['name'], $request->assign['permission']['guard_name']);
+
+        $user->givePermissionTo($permission);
+
+        return $this->sendResponse([
+            'user' => $user,
+            'permission' => $permission,
+        ], 'Permission assigned to user successfully.');
+    }
 }

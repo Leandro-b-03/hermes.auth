@@ -166,6 +166,34 @@ class UserController extends BaseController
     }
 
     /**
+     * Summary of reactive
+     * @param mixed $id
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
+    public function reactive($id)
+    {
+        DB::beginTransaction();
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return $this->sendError('User not found.', [], 404);
+        }
+
+        try {
+            $user->active = true;
+            $user->save();
+
+            DB::commit();
+
+            return $this->sendResponse([], 'User deactivated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->sendError('Failed to deactivate user.', [], 500);
+        }
+    }
+
+    /**
      * Query the database for users.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -174,10 +202,12 @@ class UserController extends BaseController
      */
     protected function query(Request $request, $page = true)
     {
+        logger($request->all());
         $perPage = $request->input('per_page', 10);
         $orderBy = $request->input('order_by', 'desc');
         $filter = $request->input('filter');
         $fields = $request->input('fields');
+        $menu = $request->input('menu');
 
         $query = User::whereHas('shipper', function ($q) use ($request) {
             $q->where('shipper_id', \Auth::user()->shipper_id);
@@ -210,6 +240,10 @@ class UserController extends BaseController
         }
 
         $query = $query->with('userInfo')->orderBy('created_at', $orderBy);
+
+        if ($menu === 'permissions') {
+            $query = $query->with('permissions')->with('roles');
+        }
 
         return $page ? $query->paginate($perPage) : $query->get();
     }

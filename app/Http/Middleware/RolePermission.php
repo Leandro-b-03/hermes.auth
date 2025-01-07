@@ -16,7 +16,7 @@ class RolePermission
     public function handle(Request $request, Closure $next, $role): Response
     {
         if (!auth()->user()->hasRole('admin') && !auth()->user()->can($role)) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'Unauthorized from middleware.'], 403);
         }
 
         return $next($request);
