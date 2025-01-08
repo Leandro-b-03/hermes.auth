@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
+use App\Models\ShipperRole;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -23,9 +24,29 @@ class RolesPermissionController extends BaseController
         $roles = Role::all();
         $permissions = Permission::all();
 
+        $shipperRoles = ShipperRole::where('shipper_id', $request->user()->shipper_id)->get();
+
+        $groupedPermissions = [];
+
+        foreach ($permissions as $permission) {
+            $parts = explode('.', $permission['name']);
+            $groupName = $parts[0];
+
+            if (!isset($groupedPermissions[$groupName])) {
+                $groupedPermissions[$groupName] = [
+                    'title' => $groupName,
+                    'permissions' => [],
+                ];
+            }
+
+            $groupedPermissions[$groupName]['permissions'][] = $permission;
+        }
+
+        $roles = array_merge($roles->toArray(), $shipperRoles->toArray());
+
         return $this->sendResponse([
             'roles' => $roles,
-            'permissions' => $permissions,
+            'permissions' => $groupedPermissions,
         ], 'Roles and permissions retrieved successfully.');
     }
 
@@ -186,6 +207,11 @@ class RolesPermissionController extends BaseController
         ], 'Permission assigned to role successfully.');
     }
 
+    /**
+     * Summary of assignPermissionToUser
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
     public function assignPermissionToUser(Request $request)
     {
         $user = User::find($request->assign['user_id']);
