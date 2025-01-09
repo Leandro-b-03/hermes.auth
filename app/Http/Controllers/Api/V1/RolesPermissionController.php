@@ -21,8 +21,8 @@ class RolesPermissionController extends BaseController
      */
     public function list(Request $request)
     {
-        $roles = Role::all();
-        $permissions = Permission::all();
+        $roles = Role::where('guard_name', 'api')->get();
+        $permissions = Permission::where('guard_name', 'api')->get();
 
         $shipperRoles = ShipperRole::where('shipper_id', $request->user()->shipper_id)->get();
 
