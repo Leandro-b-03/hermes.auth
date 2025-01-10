@@ -46,7 +46,7 @@ class RolesPermissionController extends BaseController
 
         return $this->sendResponse([
             'roles' => $roles,
-            'permissions' => $groupedPermissions,
+            'modules' => $groupedPermissions,
         ], 'Roles and permissions retrieved successfully.');
     }
 
