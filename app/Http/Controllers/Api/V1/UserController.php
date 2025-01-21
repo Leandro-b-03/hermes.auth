@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
 use App\Models\InviteUser;
+use Spatie\Permission\Models\Permission;
+
+use App\Http\Controllers\Api\V1\RolesPermissionController;
 
 use App\Http\Controllers\Api\BaseController;
 use Illuminate\Http\JsonResponse;
@@ -202,7 +205,6 @@ class UserController extends BaseController
      */
     protected function query(Request $request, $page = true)
     {
-        logger($request->all());
         $perPage = $request->input('per_page', 10);
         $orderBy = $request->input('order_by', 'desc');
         $filter = $request->input('filter');
@@ -242,7 +244,25 @@ class UserController extends BaseController
         $query = $query->with('userInfo')->orderBy('created_at', $orderBy);
 
         if ($menu === 'permissions') {
-            $query = $query->with('permissions')->with('roles');
+            $permissions = Permission::where('guard_name', 'api')->get();
+            $groupedPermissions = RolesPermissionController::groupPermissions($permissions);
+        
+            // Assuming $query is an Eloquent query builder instance you have built before
+            $query->where('active', true)->with('roles')->with('permissions')->get()->each(function ($user) use ($groupedPermissions) {
+                $userPermissions = optional($user->permissions)->pluck('name')->toArray() ?? []; // Handle cases where $user->permissions might be null
+        
+                $formattedPermissions = [];
+                foreach ($groupedPermissions as $groupData) {
+                    foreach ($groupData["permissions"] as $perm) {
+                        $formattedPermissions[$groupData['title']][$perm["name"]] = $userPermissions ? in_array($perm['name'], $userPermissions) : false;
+                    }
+                }
+                logger(gettype($user->permissions));
+        
+                $user->permissions = $formattedPermissions;
+
+                // logger($user->permissions);
+            });
         }
 
         return $page ? $query->paginate($perPage) : $query->get();

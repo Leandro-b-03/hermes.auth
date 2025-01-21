@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
 use App\Models\ShipperRole;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Api\BaseController as BaseController;
 
@@ -26,21 +26,7 @@ class RolesPermissionController extends BaseController
 
         $shipperRoles = ShipperRole::where('shipper_id', $request->user()->shipper_id)->get();
 
-        $groupedPermissions = [];
-
-        foreach ($permissions as $permission) {
-            $parts = explode('.', $permission['name']);
-            $groupName = $parts[0];
-
-            if (!isset($groupedPermissions[$groupName])) {
-                $groupedPermissions[$groupName] = [
-                    'title' => $groupName,
-                    'permissions' => [],
-                ];
-            }
-
-            $groupedPermissions[$groupName]['permissions'][] = $permission;
-        }
+        $groupedPermissions = $this->groupPermissions($permissions);
 
         $roles = array_merge($roles->toArray(), $shipperRoles->toArray());
 
@@ -223,5 +209,31 @@ class RolesPermissionController extends BaseController
             'user' => $user,
             'permission' => $permission,
         ], 'Permission assigned to user successfully.');
+    }
+
+    /**
+     * Summary of removePermissionFromRole
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public static function groupPermissions($permissions)
+    {
+        $groupedPermissions = [];
+
+        foreach ($permissions as $permission) {
+            $parts = explode('.', $permission['name']);
+            $groupName = $parts[0];
+
+            if (!isset($groupedPermissions[$groupName])) {
+                $groupedPermissions[$groupName] = [
+                    'title' => $groupName,
+                    'permissions' => [],
+                ];
+            }
+
+            $groupedPermissions[$groupName]['permissions'][] = $permission;
+        }
+
+        return $groupedPermissions;
     }
 }
