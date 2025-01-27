@@ -176,6 +176,24 @@ class RolesPermissionController extends BaseController
     }
 
     /**
+     * Remove role from user
+     *
+     * @param  Request  $request
+     */
+    public function removeRole(Request $request)
+    {
+        $role = Role::findByName($request->assign['role']['name'], $request->assign['role']['guard_name']);
+        $user = User::find($request->assign['user_id']);
+
+        $user->removeRole($role);
+
+        return $this->sendResponse([
+            'role' => $role,
+            'user' => $user,
+        ], 'Role removed from user successfully.');
+    }
+
+    /**
      * Assign role to permission
      *
      * @param  Request  $request
@@ -194,6 +212,24 @@ class RolesPermissionController extends BaseController
     }
 
     /**
+     * Remove permission from role
+     *
+     * @param  Request  $request
+     */
+    public function removePermissionFromRole(Request $request)
+    {
+        $role = Role::findByName($request->assign['role']['name'], $request->assign['role']['guard_name']);
+        $permission = Permission::findByName($request->assign['permission']['name'], $request->assign['permission']['guard_name']);
+
+        $role->revokePermissionTo($permission);
+
+        return $this->sendResponse([
+            'role' => $role,
+            'permission' => $permission,
+        ], 'Permission removed from role successfully.');
+    }
+
+    /**
      * Summary of assignPermissionToUser
      * @param \Illuminate\Http\Request $request
      * @return JsonResponse|\Illuminate\Http\Response
@@ -209,6 +245,25 @@ class RolesPermissionController extends BaseController
             'user' => $user,
             'permission' => $permission,
         ], 'Permission assigned to user successfully.');
+    }
+
+    /**
+     * Summary of removePermissionFromUser
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse|\Illuminate\Http\Response
+     */
+    public function revokePermissionFromUser(Request $request)
+    {
+        logger($request->all());
+        $user = User::find($request->assign['user_id']);
+        $permission = Permission::findByName($request->assign['permission']['name'], $request->assign['permission']['guard_name']);
+
+        $user->revokePermissionTo($permission);
+
+        return $this->sendResponse([
+            'user' => $user,
+            'permission' => $permission,
+        ], 'Permission removed from user successfully.');
     }
 
     /**

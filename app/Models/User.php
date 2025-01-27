@@ -30,6 +30,22 @@ class User extends Authenticatable
         'email_verified_at',
     ];
 
+ /**
+     * The attributes that should be appended to the model.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'formatted_permissions', // Use snake_case for appends
+    ];
+
+    /**
+     * The property to store formatted permissions.
+     *
+     * @var array
+     */
+    protected $formattedPermissions = [];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -67,5 +83,26 @@ class User extends Authenticatable
     public function shipper()
     {
         return $this->belongsTo(Shipper::class);
+    }
+
+    /**
+     * Get the user's formatted permissions.
+     *
+     * @return array
+     */
+    public function getFormattedPermissionsAttribute()
+    {
+        return $this->formattedPermissions;
+    }
+
+    /**
+     * Set the user's formatted permissions.
+     *
+     * @param array $formattedPermissions
+     * @return void
+     */
+    public function setFormattedPermissions(array $formattedPermissions)
+    {
+        $this->formattedPermissions = $formattedPermissions;
     }
 }

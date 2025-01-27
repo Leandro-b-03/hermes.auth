@@ -246,23 +246,27 @@ class UserController extends BaseController
         if ($menu === 'permissions') {
             $permissions = Permission::where('guard_name', 'api')->get();
             $groupedPermissions = RolesPermissionController::groupPermissions($permissions);
+
+            $query = $page ? $query->where('active', true)->with('roles')->with('permissions')->paginate($perPage) : $query->get();
         
             // Assuming $query is an Eloquent query builder instance you have built before
-            $query->where('active', true)->with('roles')->with('permissions')->get()->each(function ($user) use ($groupedPermissions) {
+            $query->getCollection()->transform(function ($user) use ($groupedPermissions) {
                 $userPermissions = optional($user->permissions)->pluck('name')->toArray() ?? []; // Handle cases where $user->permissions might be null
         
-                $formattedPermissions = [];
+                $formattedPermissions = $user->formattedPermissions;
                 foreach ($groupedPermissions as $groupData) {
                     foreach ($groupData["permissions"] as $perm) {
                         $formattedPermissions[$groupData['title']][$perm["name"]] = $userPermissions ? in_array($perm['name'], $userPermissions) : false;
                     }
-                }
-                logger(gettype($user->permissions));
-        
-                $user->permissions = $formattedPermissions;
+                }        
+                // $user->append["formattedPermissions"];
+                $user->setFormattedPermissions($formattedPermissions);
+                // $user->permissions = $formattedPermissions;
 
-                // logger($user->permissions);
+                return $user;
             });
+
+            return $query;
         }
 
         return $page ? $query->paginate($perPage) : $query->get();
