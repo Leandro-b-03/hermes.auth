@@ -53,9 +53,10 @@ Route::group(['prefix' => 'v1'], function () {
     Route::group(['prefix'=> 'roles', 'middleware' => 'auth:api'], function () {
         Route::get('list', [RolesPermissionController::class, 'list']);
         Route::post('create', [RolesPermissionController::class, 'create']);
-        Route::post('assign', [RolesPermissionController::class, 'assignRole']);
-        Route::post('assign_permission', [RolesPermissionController::class, 'assignPermissionToUser']);
-        Route::post('revoke_permission', [RolesPermissionController::class, 'revokePermissionFromUser']);
+        Route::middleware(RolePermission::class.':admin')->post('assign', [RolesPermissionController::class, 'assignRole']);
+        Route::middleware(RolePermission::class.':admin')->post('revoke', [RolesPermissionController::class, 'revokeRole']);
+        Route::middleware(RolePermission::class.':auth.update')->post('assign_permission', [RolesPermissionController::class, 'assignPermissionToUser']);
+        Route::middleware(RolePermission::class.':auth.delete')->post('revoke_permission', [RolesPermissionController::class, 'revokePermissionFromUser']);
     });
 
     Route::group(['prefix'=> 'shipper'], function () {

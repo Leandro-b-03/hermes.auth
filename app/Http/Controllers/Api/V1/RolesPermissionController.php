@@ -163,9 +163,12 @@ class RolesPermissionController extends BaseController
      */
     public function assignRole(Request $request)
     {
-        logger($request->all());
         $role = Role::findByName($request->assign['role']['name'], $request->assign['role']['guard_name']);
         $user = User::find($request->assign['user_id']);
+
+        $defaultRole = Role::findByName('user', 'api');
+
+        $user->removeRole($defaultRole);
 
         $user->assignRole($role);
 
@@ -180,15 +183,19 @@ class RolesPermissionController extends BaseController
      *
      * @param  Request  $request
      */
-    public function removeRole(Request $request)
+    public function revokeRole(Request $request)
     {
         $role = Role::findByName($request->assign['role']['name'], $request->assign['role']['guard_name']);
         $user = User::find($request->assign['user_id']);
 
         $user->removeRole($role);
 
+        $defaultRole = Role::findByName('user', 'api');
+
+        $user->assignRole($defaultRole);
+
         return $this->sendResponse([
-            'role' => $role,
+            'role' => $defaultRole,
             'user' => $user,
         ], 'Role removed from user successfully.');
     }
@@ -254,7 +261,6 @@ class RolesPermissionController extends BaseController
      */
     public function revokePermissionFromUser(Request $request)
     {
-        logger($request->all());
         $user = User::find($request->assign['user_id']);
         $permission = Permission::findByName($request->assign['permission']['name'], $request->assign['permission']['guard_name']);
 
