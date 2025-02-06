@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ShipperRole extends Model
+class ShipperModule extends Model
 {
     use HasFactory;
 
@@ -14,15 +14,12 @@ class ShipperRole extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'shipper_id',
-        'module_id'
-    ];
+    protected $table = 'shipper_module';
 
     /**
-     * Get the shipper that owns the ShipperRole
+     * The attributes that are mass assignable.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @var array<int, string>
      */
     public function shipper()
     {
@@ -30,7 +27,7 @@ class ShipperRole extends Model
     }
 
     /**
-     * Get the module that owns the ShipperRole
+     * Get the module that owns the ShipperModule
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */

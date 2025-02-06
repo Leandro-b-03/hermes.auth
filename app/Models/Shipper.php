@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Shipper extends Model
 {
@@ -45,5 +46,13 @@ class Shipper extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Get the modules for the shipper.
+     */
+    public function modules(): hasManyThrough
+    {
+        return $this->hasManyThrough(ShipperModule::class, Module::class);
     }
 }

@@ -86,6 +86,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the roles for the user.
+     */
+    public function modules()
+    {
+        return $this->hasManyThrough(Module::class, ShipperModule::class, 'shipper_id', 'id', 'shipper_id', 'module_id');
+    }
+
+    /**
      * Get the user's formatted permissions.
      *
      * @return array

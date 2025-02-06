@@ -21,18 +21,48 @@ class RolesPermissionController extends BaseController
      */
     public function list(Request $request)
     {
+        $user = auth()->user();
+
+        // Get the module slugs (not the whole module objects) the user has access to
+        $userPermissionSlugs = $user->modules->pluck('slug')->toArray();
+
         $roles = Role::where('guard_name', 'api')->get();
         $permissions = Permission::where('guard_name', 'api')->get();
 
-        $shipperRoles = ShipperRole::where('shipper_id', $request->user()->shipper_id)->get();
+        $shipperRoles = ShipperRole::where('shipper_id', $user->shipper_id)->get();
 
+        // Group permissions first
         $groupedPermissions = $this->groupPermissions($permissions);
+
+        // Filter groupedPermissions based on userPermissionSlugs
+        $filteredGroupedPermissions = array_filter($groupedPermissions, function ($group) use ($userPermissionSlugs) {
+            return in_array($group['title'], $userPermissionSlugs);
+        });
+
+        // Filter permissions within each group based on userPermissionSlugs
+        $filteredGroupedPermissions = array_map(function ($group) use ($userPermissionSlugs) {
+            $group['permissions'] = array_filter($group['permissions'], function ($permission) use ($userPermissionSlugs) {
+                // Check if the permission name (e.g., "auth.create") starts with any of the allowed module slugs
+                foreach ($userPermissionSlugs as $slug) {
+                    if (str_starts_with($permission['name'], $slug . '.')) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+            return $group;
+        }, $filteredGroupedPermissions);
+
+        // Remove groups that have no permissions after filtering
+        $filteredGroupedPermissions = array_filter($filteredGroupedPermissions, function ($group) {
+            return !empty($group['permissions']);
+        });
 
         $roles = array_merge($roles->toArray(), $shipperRoles->toArray());
 
         return $this->sendResponse([
             'roles' => $roles,
-            'modules' => $groupedPermissions,
+            'modules' => array_values($filteredGroupedPermissions), // Reset array keys after filtering
         ], 'Roles and permissions retrieved successfully.');
     }
 

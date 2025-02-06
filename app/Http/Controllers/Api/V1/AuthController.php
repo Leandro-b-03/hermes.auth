@@ -30,36 +30,40 @@ class AuthController extends BaseController
     {
         DB::beginTransaction();
 
-        logger($request->all());
+        if ($request->shipper_id == null) {
+            if (!$request->has('token_code')) {
+                return $this->sendError('Token code is required.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if (!$request->has('token_code')) {
-            return $this->sendError('Token code is required.', [], JsonResponse::HTTP_BAD_REQUEST);
-        }
+            if (!$request->has('user')) {
+                return $this->sendError('User data is required.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if (!$request->has('user')) {
-            return $this->sendError('User data is required.', [], JsonResponse::HTTP_BAD_REQUEST);
-        }
+            $invite = InviteUser::where('token', $request->token_code)->first();
 
-        $invite = InviteUser::where('token', $request->token_code)->first();
+            if ($invite == null) {
+                return $this->sendError('Token not found.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if ($invite == null) {
-            return $this->sendError('Token not found.', [], JsonResponse::HTTP_BAD_REQUEST);
-        }
+            if ($invite->email != $request->user['email']) {
+                return $this->sendError('Email not match.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if ($invite->email != $request->user['email']) {
-            return $this->sendError('Email not match.', [], JsonResponse::HTTP_BAD_REQUEST);
-        }
+            if ($invite->email_verified_at != null) {
+                return $this->sendError('Email already verified.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if ($invite->email_verified_at != null) {
-            return $this->sendError('Email already verified.', [], JsonResponse::HTTP_BAD_REQUEST);
-        }
+            if ($invite->token_expired_at < now()) {
+                return $this->sendError('Token expired.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if ($invite->token_expired_at < now()) {
-            return $this->sendError('Token expired.', [], JsonResponse::HTTP_BAD_REQUEST);
-        }
+            if ($invite->is_active == 0) {
+                return $this->sendError('Invite is not active.', [], JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        if ($invite->is_active == 0) {
-            return $this->sendError('Invite is not active.', [], JsonResponse::HTTP_BAD_REQUEST);
+            $shipper_id = $invite->shipper_id;
+        } else {
+            $shipper_id = $request->shipper_id;
         }
 
         $validated = Validator::make($request->all(), [
@@ -80,7 +84,7 @@ class AuthController extends BaseController
             'name' => $request->user['name'],
             'email' => $request->user['email'],
             'password' => bcrypt($request->user['password']),
-            'shipper_id' => $invite->shipper_id,
+            'shipper_id' => $shipper_id,
             'active' => 1,
         ]);
 
@@ -101,10 +105,12 @@ class AuthController extends BaseController
 
                 $user->assignRole($role);
 
-                $invite->email_verified_at = now();
-                $invite->token_expired_at = now();
-                $invite->is_active = 0;
-                $invite->save();
+                if ($request->shipper_id == null) {
+                    $invite->email_verified_at = now();
+                    $invite->token_expired_at = now();
+                    $invite->is_active = 0;
+                    $invite->save();
+                }
 
                 $tokenResult = $user->createToken(uuid_create());
                 $token = $tokenResult->accessToken;
@@ -177,6 +183,7 @@ class AuthController extends BaseController
         $user['user_info'] = $user->userInfo;
 
         $user['shipper'] = ($user['shipper_id'] == null) ? $this->fake_shipper() : $user->shipper;
+        $user['modules'] = $user->modules;
 
         return $this->sendResponse(['user' => $user], 'User retrieved successfully.');
     }
